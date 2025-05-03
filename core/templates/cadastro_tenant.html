@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_tags %}
+
+{% block content %}
+
+<header id="header-wrap">
+  {% include 'navbar-home.html' %}
+</header>
+
+<section id="content" class="section-padding">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-10 col-md-12 col-xs-12">
+        <div class="card">
+          <div class="card-header text-center">
+            <h4>Configure seu ambiente Weconn</h4>
+            <p>Agora vamos configurar seu ambiente personalizado para gestão de manutenção</p>
+          </div>
+          <div class="card-body">
+            {% if messages %}
+              {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            {% endif %}
+            
+            <form method="post" action="{% url 'cadastro_tenant' %}">
+              {% csrf_token %}
+              
+              <div class="row">
+                <div class="col-md-12">
+                  <div class="form-group">
+                    <label for="{{ form.slug.id_for_label }}">Subdomínio:</label>
+                    <div class="input-group">
+                      {{ form.slug }}
+                      <div class="input-group-append">
+                        <span class="input-group-text">.weconn.com.br</span>
+                      </div>
+                    </div>
+                    {% if form.slug.errors %}
+                      <div class="invalid-feedback d-block">
+                        {{ form.slug.errors }}
+                      </div>
+                    {% endif %}
+                    <small class="form-text text-muted">{{ form.slug.help_text }}</small>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="{{ form.email.id_for_label }}">Email de contato:</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                      <div class="invalid-feedback d-block">
+                        {{ form.email.errors }}
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+                
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="{{ form.telefone.id_for_label }}">Telefone de contato:</label>
+                    {{ form.telefone }}
+                    {% if form.telefone.errors %}
+                      <div class="invalid-feedback d-block">
+                        {{ form.telefone.errors }}
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label for="{{ form.empresa.id_for_label }}">Nome da empresa:</label>
+                {{ form.empresa }}
+                {% if form.empresa.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.empresa.errors }}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="form-group">
+                <label for="{{ form.cpf_cnpj.id_for_label }}">CPF/CNPJ:</label>
+                {{ form.cpf_cnpj }}
+                {% if form.cpf_cnpj.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.cpf_cnpj.errors }}
+                  </div>
+                {% endif %}
+                <small class="form-text text-muted">Informe o CPF ou CNPJ sem pontuação</small>
+              </div>
+              
+              <div class="form-group">
+                <label>Escolha seu plano:</label>
+                <div class="row">
+                  {% for radio in form.plano %}
+                    <div class="col-md-4">
+                      <div class="plan-card">
+                        <div class="form-check">
+                          {{ radio.tag }}
+                          <label class="form-check-label" for="{{ radio.id_for_label }}">
+                            {% with plano=planos|get_item:forloop.counter0 %}
+                            
+                              <div class="plan-header">
+                                <h3>{{ plano.nome }}</h3>
+                                <p class="price">R$ {{ plano.preco }}<span>/mês</span></p>
+                              </div>
+                            
+                              <div class="plan-features">
+                                <ul>
+                                  {% for recurso in plano.recursos|split_string %}
+                                    <li>{{ recurso|trim }}</li>
+                                  {% endfor %}
+                                </ul>
+                              </div>
+                            {% endwith %}
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+                {% if form.plano.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.plano.errors }}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="form-group text-center mt-4">
+                <button type="submit" class="btn btn-common btn-lg">Criar Meu Ambiente</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .plan-card {
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+    height: 100%;
+  }
+  
+  .plan-card:hover, .plan-card.featured {
+    /*border-color: #f0f8ff;*/
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  }
+  
+  .plan-card.featured {
+  border: 2px solid #1a76ff;
+  background-color: #fff; /* Alterado para branco */
+}
+  
+  .plan-header {
+    text-align: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+  }
+  
+  .plan-header h3 {
+    margin-bottom: 5px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  
+  .price {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a76ff;
+  }
+  
+  .price span {
+    font-size: 14px;
+    font-weight: 400;
+    color: #666;
+  }
+  
+  .plan-features ul {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 0;
+  }
+  
+  .plan-features li {
+    padding: 5px 0;
+    font-size: 14px;
+  }
+  
+  .plan-features li:before {
+    content: "✓";
+    color: #1a76ff;
+    margin-right: 8px;
+  }
+  
+  .form-check {
+    padding-left: 0;
+  }
+  
+  .form-check-input {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+  }
+</style>
+
+{% include 'footer.html' %}
+{% endblock %}

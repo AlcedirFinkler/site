@@ -1,0 +1,1 @@
+web gunicorn Django6.wsgi:apllication --log-file -

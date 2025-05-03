@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_tags %}
+
+{% block content %}
+<header id="header-wrap">
+  {% include 'navbar-home.html' %}
+
+  <div class="page-header" style="background: url({% static 'img/banner1.jpg' %});">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">
+          <div class="breadcrumb-wrapper">
+            <h2 class="product-title">Planos e Preços</h2>
+            <ol class="breadcrumb">
+              <li><a href="{% url 'index' %}">Início /</a></li>
+              <li class="current">Planos</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="pricing" class="section-padding">
+  <div class="container">
+    <div class="section-header text-center">          
+      <h2 class="section-title">Escolha o plano ideal para sua empresa</h2>
+      <p class="section-subtitle">Soluções completas para otimizar sua gestão de manutenção industrial</p>
+      <div class="shape"></div>
+    </div>
+    
+    <div class="row">
+      {% for plano in planos %}
+      <div class="col-lg-4 col-md-6 col-xs-12 {% if plano.nivel == 'nivel2' %}active{% endif %}">
+        <div class="table wow {% if plano.nivel == 'nivel1' %}fadeInLeft{% elif plano.nivel == 'nivel2' %}fadeInUp{% else %}fadeInRight{% endif %}" {% if plano.nivel == 'nivel2' %}id="active-tb"{% endif %} data-wow-delay="0.3s">
+          <div class="icon-box">
+            <i class="{% if plano.nivel == 'nivel1' %}lni-package{% elif plano.nivel == 'nivel2' %}lni-drop{% else %}lni-star{% endif %}"></i>
+          </div>
+          
+          <div class="pricing-header">
+            <p class="price-value">R${{ plano.preco }}<span> /mês</span></p>
+          </div>
+          
+          <div class="title">
+            <h3>{{ plano.nome }}</h3>
+          </div>
+          <div class="description">
+            <p>{{ plano.descricao }}</p>
+          </div>
+          <ul class="description">
+            {% for recurso in plano.recursos|split_string %}
+              <li>{{ recurso|trim }}</li>
+            {% endfor %}
+          </ul>
+          <a href="{% url 'cadastro_usuario' %}" class="btn btn-common">Contratar Agora</a>
+        </div> 
+      </div>
+      {% endfor %}
+    </div>
+        
+    <div class="faq-section mt-5">
+      <div class="section-header text-center mb-5">          
+        <h2 class="section-title">Perguntas Frequentes</h2>
+        <div class="shape"></div>
+      </div>
+      
+      <div class="row">
+        <div class="col-lg-6">
+          <div class="card faq-item mb-4">
+            <div class="card-header">
+              <h5>Posso mudar de plano depois?</h5>
+            </div>
+            <div class="card-body">
+              <p>Sim, você pode fazer upgrade ou downgrade do seu plano a qualquer momento. As mudanças entram em vigor no próximo ciclo de faturamento. Ao fazer upgrade, você terá acesso imediato aos novos recursos.</p>
+            </div>
+          </div>
+                 
+          <div class="card faq-item mb-4">
+            <div class="card-header">
+              <h5>Como funciona o faturamento?</h5>
+            </div>
+            <div class="card-body">
+              <p>O faturamento é mensal e pode ser feito via boleto bancário ou PIX. Também oferecemos descontos especiais para pagamentos anuais.</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-lg-6">
+          <div class="card faq-item mb-4">
+            <div class="card-header">
+              <h5>Preciso instalar algum software?</h5>
+            </div>
+            <div class="card-body">
+              <p>Não, o We conn é uma solução 100% web (SaaS). Você não precisa instalar nada em seus servidores ou computadores. Basta acessar através de um navegador web.</p>
+            </div>
+          </div>
+          
+          <div class="card faq-item mb-4">
+            <div class="card-header">
+              <h5>Como funciona o suporte técnico?</h5>
+            </div>
+            <div class="card-body">
+              <p>Oferecemos suporte técnico por email em todos os planos. Nos planos Profissional e Empresarial, também disponibilizamos suporte via chat. O plano Empresarial conta com suporte prioritário 24/7.</p>
+            </div>
+          </div>
+          
+          <div class="card faq-item mb-4">
+            <div class="card-header">
+              <h5>Meus dados estão seguros?</h5>
+            </div>
+            <div class="card-body">
+              <p>Sim, utilizamos criptografia de ponta e servidores redundantes para garantir a segurança e disponibilidade dos seus dados. Realizamos backups automáticos diários e seguimos as melhores práticas de segurança da informação.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="cta-section text-center mt-5">
+      <h2>Pronto para transformar sua gestão de manutenção?</h2>
+      <p>Realize o cadastro sem compromisso que nossos consultores entram em contato para maiores esclarecimentos.</p>
+      <a href="{% url 'cadastro_usuario' %}" class="btn btn-common btn-lg">Começar Agora</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .section-subtitle {
+    max-width: 700px;
+    margin: 0 auto 30px;
+    color: #666;
+  }
+  
+  .comparison-table th, .comparison-table td {
+    vertical-align: middle;
+  }
+  
+  .comparison-table th.highlight, .comparison-table td.highlight {
+    background-color: #f8faff;
+    border-color: #1a76ff;
+  }
+  
+  .comparison-table th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+  }
+  
+  .comparison-table th.highlight {
+    background-color: #e6eeff;
+  }
+  
+  .faq-item .card-header {
+    background-color: #f8faff;
+    padding: 15px 20px;
+  }
+  
+  .faq-item .card-header h5 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  
+  .cta-section {
+    background-color: #f8faff;
+    padding: 50px;
+    border-radius: 10px;
+    margin-top: 50px;
+  }
+  
+  .cta-section h2 {
+    margin-bottom: 15px;
+  }
+  
+  .cta-section p {
+    margin-bottom: 25px;
+    font-size: 18px;
+  }
+</style>
+
+{% include 'footer.html' %}
+{% endblock %}

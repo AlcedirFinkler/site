@@ -1,0 +1,379 @@
+# Guia de Integração da API do Sistema Weconn
+
+Este documento fornece instruções detalhadas sobre como integrar sua aplicação com o sistema Weconn por meio da API disponibilizada. O Weconn oferece uma API baseada em REST que permite verificar informações sobre tenants, incluindo status de pagamento, plano contratado e recursos disponíveis.
+
+## 1. Testando o Acesso via Prompt de Comando
+
+Antes de integrar completamente sua aplicação, você pode testar o acesso à API usando ferramentas de linha de comando como curl ou scripts Python simples.
+
+### 1.1. Usando curl
+
+```bash
+# Verificar informações do tenant
+curl -H "Authorization: Api-Key SUA_CHAVE_API_AQUI" https://weconn.com.br/api/tenant-info/?slug=nome-do-tenant
+
+# Verificar se a chave API é válida
+curl -H "Authorization: Api-Key SUA_CHAVE_API_AQUI" https://weconn.com.br/api/verify-key/
+```
+
+### 1.2. Usando Python com requests
+
+```python
+import requests
+
+# Configuração
+API_KEY = "SUA_CHAVE_API_AQUI"
+TENANT_SLUG = "nome-do-tenant"
+BASE_URL = "https://weconn.com.br"
+
+# Cabeçalhos para autenticação
+headers = {
+    "Authorization": f"Api-Key {API_KEY}"
+}
+
+# Verificar informações do tenant
+response = requests.get(
+    f"{BASE_URL}/api/tenant-info/?slug={TENANT_SLUG}", 
+    headers=headers
+)
+
+# Imprimir resultado
+print(f"Status code: {response.status_code}")
+if response.status_code == 200:
+    data = response.json()
+    print("Informações do tenant:")
+    print(f"Nome: {data['nome']}")
+    print(f"Plano: {data['plano']['nome']}")
+    print(f"Status: {data['access_status']}")
+    print(f"Recursos disponíveis: {data['recursos']}")
+else:
+    print(f"Erro: {response.text}")
+```
+
+## 2. Integrando uma Aplicação Django ao Sistema Weconn
+
+Para integrar sua aplicação Django ao Weconn e verificar os planos e status de pagamento, siga as orientações abaixo.
+
+### 2.1. Implementação da Verificação de Tenant
+
+Recomendamos criar um serviço específico em sua aplicação Django para gerenciar a comunicação com a API do Weconn.
+
+```python
+# weconn_service.py
+import requests
+from django.conf import settings
+from django.core.cache import cache
+
+class WeconnService:
+    def __init__(self):
+        self.api_key = settings.WECONN_API_KEY
+        self.base_url = settings.WECONN_BASE_URL
+        self.tenant_slug = settings.WECONN_TENANT_SLUG
+        self.headers = {
+            "Authorization": f"Api-Key {self.api_key}"
+        }
+    
+    def get_tenant_info(self, use_cache=True):
+        """
+        Obtém informações do tenant a partir da API do Weconn.
+        Utiliza cache para reduzir o número de chamadas à API.
+        """
+        cache_key = f"weconn_tenant_info_{self.tenant_slug}"
+        
+        # Tenta obter do cache primeiro
+        if use_cache:
+            cached_data = cache.get(cache_key)
+            if cached_data:
+                return cached_data
+        
+        # Se não estiver em cache ou cache estiver desabilitado, faz a requisição
+        response = requests.get(
+            f"{self.base_url}/api/tenant-info/?slug={self.tenant_slug}",
+            headers=self.headers
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            # Armazena em cache por 30 minutos
+            cache.set(cache_key, data, 60 * 30)
+            return data
+        
+        # Em caso de erro, retorna None ou lança exceção conforme preferência
+        return None
+    
+    def validate_api_key(self):
+        """
+        Verifica se a chave API é válida.
+        """
+        response = requests.get(
+            f"{self.base_url}/api/verify-key/",
+            headers=self.headers
+        )
+        return response.status_code == 200
+    
+    def check_access_status(self):
+        """
+        Verifica se o tenant está ativo e com pagamento em dia.
+        """
+        info = self.get_tenant_info()
+        if not info:
+            return False
+        
+        return info['access_status'] == 'active'
+    
+    def get_plan_resources(self):
+        """
+        Obtém os recursos disponíveis para o plano atual.
+        """
+        info = self.get_tenant_info()
+        if not info:
+            return {}
+        
+        return info.get('recursos', {})
+    
+    def can_use_feature(self, feature_name):
+        """
+        Verifica se uma funcionalidade específica está disponível.
+        """
+        resources = self.get_plan_resources()
+        return resources.get(feature_name, False)
+    
+    def get_users_limit(self):
+        """
+        Obtém o limite de usuários do plano.
+        """
+        resources = self.get_plan_resources()
+        return resources.get('usuarios_max', 0)
+    
+    def get_assets_limit(self):
+        """
+        Obtém o limite de ativos do plano.
+        """
+        resources = self.get_plan_resources()
+        return resources.get('ativos_max', 0)
+```
+
+### 2.2. Configurações no settings.py
+
+Adicione as seguintes configurações ao seu arquivo `settings.py`:
+
+```python
+# Configurações de integração com Weconn
+WECONN_API_KEY = 'SUA_CHAVE_API_AQUI'
+WECONN_BASE_URL = 'https://weconn.com.br'
+WECONN_TENANT_SLUG = 'nome-do-tenant'
+
+# Tempo de expiração do cache para informações do tenant (em segundos)
+WECONN_CACHE_TIMEOUT = 1800  # 30 minutos
+```
+
+### 2.3. Middleware para Verificação de Status em Cada Requisição
+
+Você pode implementar um middleware para verificar o status do tenant em cada requisição:
+
+```python
+# middleware.py
+from django.shortcuts import redirect
+from django.urls import reverse
+from .weconn_service import WeconnService
+
+class WeconnStatusMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+        
+    def __call__(self, request):
+        # Exclui caminhos que não precisam de verificação
+        excluded_paths = [
+            '/admin/',
+            '/login/',
+            '/logout/',
+            '/subscription-expired/',
+            '/static/',
+            '/media/',
+        ]
+        
+        path = request.path
+        if any(path.startswith(excluded) for excluded in excluded_paths):
+            return self.get_response(request)
+        
+        # Verifica o status do tenant
+        service = WeconnService()
+        if not service.check_access_status():
+            # Redireciona para uma página informando que a assinatura expirou
+            return redirect('subscription_expired')
+        
+        # Continua com a requisição normal
+        response = self.get_response(request)
+        return response
+```
+
+Adicione o middleware ao seu `settings.py`:
+
+```python
+MIDDLEWARE = [
+    # outros middlewares...
+    'seu_app.middleware.WeconnStatusMiddleware',
+]
+```
+
+### 2.4. Decorador para Verificar Recursos Específicos do Plano
+
+Crie um decorador para proteger views que dependem de recursos específicos do plano:
+
+```python
+# decorators.py
+from functools import wraps
+from django.shortcuts import redirect
+from django.urls import reverse
+from .weconn_service import WeconnService
+
+def requires_feature(feature_name):
+    """
+    Decorador que verifica se o recurso está disponível no plano atual.
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped_view(request, *args, **kwargs):
+            service = WeconnService()
+            if not service.can_use_feature(feature_name):
+                # Redireciona para uma página informando sobre a necessidade de upgrade
+                return redirect('plan_upgrade_required')
+            return view_func(request, *args, **kwargs)
+        return _wrapped_view
+    return decorator
+```
+
+Uso do decorador:
+
+```python
+from .decorators import requires_feature
+
+@requires_feature('dashboards')
+def dashboard_view(request):
+    # Esta view só será acessível se o plano incluir dashboards
+    return render(request, 'dashboard.html')
+
+@requires_feature('predictive_maintenance')
+def predictive_maintenance_view(request):
+    # Esta view só será acessível em planos que incluem manutenção preditiva
+    return render(request, 'predictive_maintenance.html')
+```
+
+## 3. Informações Adicionais Importantes
+
+### 3.1. Estrutura de Resposta da API
+
+A resposta da API `/api/tenant-info/` inclui as seguintes informações:
+
+```json
+{
+  "id": 1,
+  "nome": "Nome do Tenant",
+  "slug": "nome-do-tenant",
+  "empresa": "Nome da Empresa",
+  "email": "contato@empresa.com",
+  "telefone": "(11) 99999-9999",
+  "cpf_cnpj": "12345678901234",
+  "plano": {
+    "id": 2,
+    "nome": "Profissional",
+    "descricao": "Plano intermediário",
+    "preco": "299.90",
+    "nivel": "nivel2",
+    "recursos": "Gestão de equipes,Indicadores de desempenho,..."
+  },
+  "status_pagamento": "em_dia",
+  "data_vencimento": "2025-04-21",
+  "ativo": true,
+  "recursos": {
+    "usuarios_max": 20,
+    "ativos_max": 500,
+    "api_access": true,
+    "dashboards": true,
+    "predictive_maintenance": false,
+    "machine_learning": false
+  },
+  "access_status": "active"
+}
+```
+
+### 3.2. Valores Possíveis para `access_status`
+
+- `active`: Tenant ativo e com pagamento em dia
+- `grace_period`: Tenant ativo, mas com pagamento em atraso (período de carência)
+- `expired`: Pagamento expirado, acesso limitado
+- `blocked`: Tenant bloqueado, sem acesso
+
+### 3.3. Tratamento de Erros
+
+Implemente tratamento adequado para possíveis erros de conexão:
+
+1. **Timeout**: A API do Weconn pode não responder dentro do tempo esperado
+2. **Indisponibilidade**: O servidor pode estar em manutenção ou inacessível
+3. **Erro de autenticação**: A chave API pode ter expirado ou sido revogada
+
+Exemplo de tratamento:
+
+```python
+def get_tenant_info_safe(self):
+    """
+    Versão segura do método get_tenant_info que não falha em caso de problemas de conexão.
+    """
+    try:
+        return self.get_tenant_info()
+    except requests.exceptions.RequestException:
+        # Registre o erro em logs, mas não interrompa a aplicação
+        import logging
+        logging.exception("Falha ao conectar com a API do Weconn")
+        
+        # Tenta usar dados em cache, mesmo que antigos
+        cache_key = f"weconn_tenant_info_{self.tenant_slug}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return cached_data
+            
+        # Se não houver dados em cache, retorna configuração padrão
+        return {
+            'access_status': 'active',  # Assume ativo para evitar bloqueio total
+            'recursos': {
+                'usuarios_max': 5,      # Configurações mínimas padrão
+                'ativos_max': 50,
+                'api_access': False,
+                'dashboards': False
+            }
+        }
+```
+
+### 3.4. Boas Práticas
+
+1. **Cache**: Use cache para evitar chamadas frequentes à API
+2. **Job Periódico**: Atualize as informações do tenant em segundo plano periodicamente
+3. **Fallback**: Tenha um plano de contingência para quando a API estiver indisponível
+4. **Monitoramento**: Implemente logs e alertas para falhas na comunicação com a API
+5. **Rotação de Chaves**: Esteja preparado para atualizar a chave API quando necessário
+
+### 3.5. Limitações de Planos
+
+Cada nível de plano oferece diferentes recursos:
+
+- **Nível 1 (Básico)**:
+  - Máximo de 5 usuários
+  - Máximo de 50 ativos
+  - Sem acesso a dashboards ou API
+
+- **Nível 2 (Profissional)**:
+  - Máximo de 20 usuários
+  - Máximo de 500 ativos
+  - Acesso a dashboards e API
+  - Sem manutenção preditiva ou machine learning
+
+- **Nível 3 (Empresarial)**:
+  - Usuários ilimitados (0 indica ilimitado)
+  - Ativos ilimitados
+  - Acesso completo a todas as funcionalidades
+
+Implemente verificações adequadas em sua aplicação para respeitar essas limitações.
+
+## 4. Suporte e Contato
+
+Para questões relacionadas à API ou problemas de integração, entre em contato com a equipe de suporte do Weconn através do email suporte@weconn.com.br.

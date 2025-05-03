@@ -1,0 +1,44 @@
+[
+    {
+      "model": "core.planoassinatura",
+      "pk": 1,
+      "fields": {
+        "criados": "2025-03-20",
+        "modificado": "2025-03-20",
+        "ativo": true,
+        "nome": "Básico",
+        "descricao": "Ideal para pequenas empresas que estão começando a digitalizar a gestão de manutenção",
+        "preco": "99.90",
+        "nivel": "nivel1",
+        "recursos": "Gestão de ativos,Ordens de serviço,Planos de manutenção,Relatórios básicos,Acesso web e mobile,Até 5 usuários,Até 50 ativos,Suporte por email"
+      }
+    },
+    {
+      "model": "core.planoassinatura",
+      "pk": 2,
+      "fields": {
+        "criados": "2025-03-20",
+        "modificado": "2025-03-20",
+        "ativo": true,
+        "nome": "Profissional",
+        "descricao": "Solução completa para médias empresas com múltiplas equipes de manutenção",
+        "preco": "299.90",
+        "nivel": "nivel2",
+        "recursos": "Tudo do plano Básico,Gestão de equipes,Indicadores de desempenho,Relatórios avançados,Dashboards interativos,Integração com ERP,Até 20 usuários,Até 500 ativos,Suporte por email e chat"
+      }
+    },
+    {
+      "model": "core.planoassinatura",
+      "pk": 3,
+      "fields": {
+        "criados": "2025-03-20",
+        "modificado": "2025-03-20",
+        "ativo": true,
+        "nome": "Empresarial",
+        "descricao": "Solução avançada para grandes operações industriais com recursos de manutenção preditiva",
+        "preco": "899.90",
+        "nivel": "nivel3",
+        "recursos": "Tudo do plano Profissional,Manutenção preditiva,Integração IoT,Análise avançada de dados,Machine learning,API para integração,Usuários ilimitados,Ativos ilimitados,Suporte prioritário 24/7"
+      }
+    }
+  ]

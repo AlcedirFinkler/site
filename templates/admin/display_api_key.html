@@ -1,0 +1,49 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Chave API Gerada" %} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_('Django administration') }}</a></h1>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 20px auto; padding: 20px; background-color: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 5px;">
+    <h1>{% trans "Chave API Gerada com Sucesso" %}</h1>
+    
+    <div class="alert alert-warning" style="background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <p><strong>{% trans "Importante:" %}</strong> {% trans "Esta chave será exibida apenas uma vez. Por favor, guarde-a em um local seguro." %}</p>
+    </div>
+    
+    <div style="margin: 20px 0;">
+        <h2>{% trans "Detalhes" %}</h2>
+        <p><strong>{% trans "Tenant:" %}</strong> {{ tenant.nome }}</p>
+        <p><strong>{% trans "Empresa:" %}</strong> {{ tenant.empresa }}</p>
+        <p><strong>{% trans "Data de geração:" %}</strong> {{ key_generated_at }}</p>
+    </div>
+    
+    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <h3>{% trans "Sua Chave API" %}</h3>
+        <div style="font-family: monospace; font-size: 16px; padding: 10px; background-color: #e9ecef; border-radius: 3px; word-break: break-all;">
+            {{ api_key }}
+        </div>
+    </div>
+    
+    <div style="margin: 20px 0;">
+        <h3>{% trans "Como usar" %}</h3>
+        <p>{% trans "Para autenticar suas requisições à API, inclua o seguinte cabeçalho em suas solicitações HTTP:" %}</p>
+        <div style="font-family: monospace; font-size: 14px; padding: 10px; background-color: #e9ecef; border-radius: 3px;">
+            Authorization: Api-Key {{ api_key }}
+        </div>
+        
+        <h4 style="margin-top: 15px;">{% trans "Exemplo de requisição" %}</h4>
+        <div style="font-family: monospace; font-size: 14px; padding: 10px; background-color: #e9ecef; border-radius: 3px; white-space: pre-wrap;">
+curl -H "Authorization: Api-Key {{ api_key }}" {{ api_url }}/api/tenant-info/?slug={{ tenant.slug }}
+        </div>
+    </div>
+    
+    <div style="margin-top: 30px;">
+        <a href="{% url 'admin:core_tenant_changelist' %}" class="button" style="display: inline-block; padding: 10px 15px; background-color: #417690; color: white; text-decoration: none; border-radius: 4px;">{% trans "Voltar para lista de Tenants" %}</a>
+    </div>
+</div>
+{% endblock %}
